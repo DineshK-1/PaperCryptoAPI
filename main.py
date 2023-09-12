@@ -46,7 +46,7 @@ def get_user(db: Session = Depends(get_db)):
 
     return users
 
-@app.get("/create_user", tags=["User"])
+@app.post("/create_user", tags=["User"])
 def create_user(uid: str, First_Name:str, Last_Name: str, Email: str, Phone: str,  db: Session = Depends(get_db)):
     user_object = models.User(uid = uid, First_Name=First_Name, Last_Name = Last_Name, Email = Email)
 
@@ -60,9 +60,8 @@ def create_user(uid: str, First_Name:str, Last_Name: str, Email: str, Phone: str
     try:
         db.add(user_object)
         db.commit()
-    except SQLAlchemyError:
+    except SQLAlchemyError as e:
+        print("Error creating user:", str(e))
         raise HTTPException(status_code=500, detail="Error creating user")
-
-    db.commit()
 
     return user_object

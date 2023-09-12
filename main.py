@@ -7,6 +7,8 @@ from sqlalchemy import func, update
 
 from Database import models
 from Database.sql import engine, SessionLocal
+
+import httpx
 # from Database.schema import CabBase, CabsResponse, DriversResponse, DriverBase, DeleteResponse, SearchRequest
 
 # from Database.validation import validateDriver, validateCab, validateEmail
@@ -41,7 +43,7 @@ def get_user(uid: str,  db: Session = Depends(get_db)):
     return user
 
 @app.get("/get_users", tags=["Admin"])
-def get_user(db: Session = Depends(get_db)):
+def get_users(db: Session = Depends(get_db)):
     users = db.query(models.User).all()
 
     return users
@@ -67,11 +69,11 @@ def create_user(uid: str, First_Name:str, Last_Name: str, Email: str, Phone: str
     return user_object
 
 @app.post("/add_balance", tags=["User"])
-def create_user(uid: str, amount : str,  db: Session = Depends(get_db)):
+def add_balance(uid: str, amount : str,  db: Session = Depends(get_db)):
     
     user_obj = db.query(models.User).filter_by(uid=uid).first()
 
-    user_obj.Current_Balance += int(amount)
+    user_obj.Current_Balance += float(amount)
 
     transaction = models.AccountTransactions(user_id = uid, transaction_type = "Deposit", amount=amount)
 
@@ -85,12 +87,12 @@ def create_user(uid: str, amount : str,  db: Session = Depends(get_db)):
     return {"status": "Success"}
 
 @app.post("/withdraw_money", tags=["User"])
-def create_user(uid: str, amount : str,  db: Session = Depends(get_db)):
+def withdraw_money(uid: str, amount : str,  db: Session = Depends(get_db)):
     
     user_obj = db.query(models.User).filter_by(uid=uid).first()
 
-    if(user_obj.Current_Balance >= int(amount)):
-        user_obj.Current_Balance -= int(amount)
+    if(user_obj.Current_Balance >= float(amount)):
+        user_obj.Current_Balance -= float(amount)
     else:
         return {"status" : "Failure", "message" : "Not enough funds to withdraw"}
 
@@ -113,3 +115,40 @@ def get_user(uid: str,  db: Session = Depends(get_db)):
         return {"user_id": uid, "balance": user.Current_Balance}
     else:
         raise HTTPException(status_code=404, detail=f"User with ID {uid} not found")
+    
+@app.post("/{uid}/buy_crypto", tags=["Crypto"])
+async def buy_crypto(uid : str, token_id : str, amount : float,  db: Session = Depends(get_db)):
+    fetch_coin_data = f"https://coinranking1.p.rapidapi.com/coin/{token_id}"
+
+    headers = {
+        "X-RapidAPI-Key": "6c15ef80a9msh0fab964ed355602p120ff5jsn278d01eb24fb",
+        "X-RapidAPI-Host": "coinranking1.p.rapidapi.com", 
+    }
+
+    async with httpx.AsyncClient() as client:
+        response = await client.get(fetch_coin_data, headers=headers)
+
+    if response.status_code == 200:
+        data = response.json()
+        data = data["data"]["coin"]
+    else:
+        return {"status": "Failed"}
+    holding_obj = models.CryptoHoldings(user_id = uid, token_id = token_id, token_name=data["name"], token_symbol=data["symbol"], token_price = data["price"], amount=amount)
+
+    transaction = models.CryptoTransactions(user_id = uid, transaction_type = "BUY", token_id=token_id, token_name=data["name"], token_symbol=data["symbol"], token_price = data["price"], amount=amount)
+
+    try:
+        db.add(holding_obj)
+        db.add(transaction)
+        db.commit()
+    except SQLAlchemyError as e:
+        print("Error during purchasing:", str(e))
+        raise HTTPException(status_code=404, detail="Error during purchasing")
+    
+    return {"status" : "Success"}
+
+@app.get("/{uid}/crypto_holdings", tags=["Crypto"])
+def get_crypto_holdings(uid:str,  db: Session = Depends(get_db)):
+    holdings = db.query(models.CryptoHoldings).filter(models.User.uid == uid).all()
+
+    return holdings

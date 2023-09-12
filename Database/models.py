@@ -1,5 +1,5 @@
 from .sql import Base
-from sqlalchemy import DATE, TIMESTAMP, Column, Integer, String, ForeignKey
+from sqlalchemy import DATE, TIMESTAMP, Column, Integer, String, ForeignKey, Float
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 
@@ -12,7 +12,7 @@ class User(Base):
     Email = Column(String(200), nullable=False)
     Phone = Column(String(20))
 
-    Current_Balance = Column(Integer)
+    Current_Balance = Column(Float)
 
     Account_Status = Column(Integer)
     
@@ -20,6 +20,8 @@ class User(Base):
     time_updated = Column(TIMESTAMP(timezone=True), onupdate=func.now())
 
     transactions_account = relationship('AccountTransactions', backref='user')
+    transactions_crypto = relationship('CryptoTransactions', backref='user')
+    crypto_holdings = relationship("CryptoHoldings", backref="user")
 
 class AccountTransactions(Base):
 
@@ -32,17 +34,37 @@ class AccountTransactions(Base):
 
     transaction_time = Column(TIMESTAMP(timezone=True), nullable=False, server_default=func.now())
 
-# class Driver(Base):
-#     __tablename__ = "drivers"
+class CryptoTransactions(Base):
 
-#     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
-#     driver_first_name = Column(String(200), nullable=False)
-#     driver_last_name = Column(String(200), nullable=False)
-#     driver_ID = Column(Integer, nullable=False)
-#     driver_email = Column(String(200), nullable=False)
-#     driver_phone = Column(String(15), nullable=False)
+    __tablename__ = "transactions_crypto"
 
-#     created_date = Column(DATE, nullable=False, server_default=func.now())
-#     time_updated = Column(TIMESTAMP(timezone=True), onupdate=func.now())
+    transaction_id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    user_id = Column(String(100), ForeignKey("users.uid"))
 
-#     cab = relationship('Cab', back_populates='driver', uselist=False, cascade='all, delete-orphan')
+    transaction_type = Column(String(50), nullable=False)
+    token_id = Column(String(50), nullable=False)
+    token_name = Column(String(50), nullable=False)
+    token_symbol = Column(String(50), nullable=False)
+
+    token_price = Column(Float, nullable=False)
+
+    amount = Column(Float)
+
+    transaction_time = Column(TIMESTAMP(timezone=True), nullable=False, server_default=func.now())
+
+
+class CryptoHoldings(Base):
+    __tablename__ = "crypto_holdings"
+
+    transaction_id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    user_id = Column(String(100), ForeignKey("users.uid"))
+
+    token_id = Column(String(50), nullable=False)
+    token_name = Column(String(50), nullable=False)
+    token_symbol = Column(String(50), nullable=False)
+
+    token_price = Column(Float, nullable=False)
+
+    amount = Column(Float)
+
+    bought_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=func.now())

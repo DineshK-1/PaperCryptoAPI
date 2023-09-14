@@ -25,7 +25,7 @@ origins = [
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=origins,
     allow_methods=["*"],
     allow_headers=["*"],
     allow_credentials=True,
@@ -139,7 +139,13 @@ async def buy_crypto(uid : str, token_id : str, amount : float,  db: Session = D
         data = data["data"]["coin"]
     else:
         return {"status": "Failed"}
-    holding_obj = models.CryptoHoldings(user_id = uid, token_id = token_id, token_name=data["name"], token_symbol=data["symbol"], token_price = data["price"], amount=amount)
+    
+    user_holdings = db.query(models.CryptoHoldings).filter(models.CryptoHoldings.user_id == uid).filter(models.CryptoHoldings.token_id == token_id).first()
+
+    if user_holdings is None:
+        holding_obj = models.CryptoHoldings(user_id = uid, token_id = token_id, token_name=data["name"], token_symbol=data["symbol"], token_price = data["price"], amount=amount)
+    else:
+        holding_obj = user_holdings
 
     transaction = models.CryptoTransactions(user_id = uid, transaction_type = "BUY", token_id=token_id, token_name=data["name"], token_symbol=data["symbol"], token_price = data["price"], amount=amount)
 
@@ -152,6 +158,50 @@ async def buy_crypto(uid : str, token_id : str, amount : float,  db: Session = D
         raise HTTPException(status_code=404, detail="Error during purchasing")
     
     return {"status" : "Success"}
+
+@app.post("/{uid}/sell_crypto", tags=["Crypto"])
+async def sell_crypto(uid : str, token_id : str, amount : float,  db: Session = Depends(get_db)):
+    fetch_coin_data = f"https://coinranking1.p.rapidapi.com/coin/{token_id}"
+
+    headers = {
+        "X-RapidAPI-Key": "6c15ef80a9msh0fab964ed355602p120ff5jsn278d01eb24fb",
+        "X-RapidAPI-Host": "coinranking1.p.rapidapi.com", 
+    }
+
+    user_holding = db.query(models.CryptoHoldings).filter(models.CryptoHoldings.user_id == uid).filter(models.CryptoHoldings.token_id == token_id).first()
+    
+    holding_amount = 0
+
+    for holding in user_holding:
+        holding_amount += holding.amount
+
+    if holding_amount >= amount:
+        user_holding.amount -= amount
+        async with httpx.AsyncClient() as client:
+            response = await client.get(fetch_coin_data, headers=headers)
+
+        if response.status_code == 200:
+            data = response.json()
+            data = data["data"]["coin"]
+        else:
+            return {"status": "Failed"}
+        
+        transaction = models.CryptoTransactions(user_id = uid, transaction_type = "SELL", token_id=token_id, token_name=data["name"], token_symbol=data["symbol"], token_price = data["price"], amount=amount)
+        user_obj = db.query(models.User).filter(models.User.uid == uid).first()
+
+        fiat_cash = float(data["price"])*amount
+
+        user_obj.Current_Balance += fiat_cash
+        try:
+            db.add(transaction)
+            db.commit()
+        except SQLAlchemyError as e:
+            print("Error during purchasing:", str(e))
+            raise HTTPException(status_code=404, detail="Error during purchasing")
+        
+        return {"status" : "Success"}
+    else:
+        return {"status": "Failed", "Reason" : "Not enough holdings"}
 
 @app.get("/{uid}/crypto_holdings", tags=["Crypto"])
 def get_crypto_holdings(uid:str,  db: Session = Depends(get_db)):

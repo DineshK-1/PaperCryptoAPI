@@ -30,7 +30,7 @@ class AccountTransactions(Base):
     transaction_id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     user_id = Column(String(100), ForeignKey("users.uid"))
     transaction_type = Column(String(50), nullable=False)
-    amount = Column(String(30))
+    amount = Column(Float)
 
     transaction_time = Column(TIMESTAMP(timezone=True), nullable=False, server_default=func.now())
 

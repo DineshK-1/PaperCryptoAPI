@@ -140,6 +140,15 @@ async def buy_crypto(uid : str, token_id : str, amount : float,  db: Session = D
     else:
         return {"status": "Failed"}
     
+    fiat_price = float(data["price"])*amount
+
+    user_obj = db.query(models.User).filter(models.User.uid == uid).first()
+    if user_obj.Current_Balance < fiat_price:
+        return {"status": "Failed", "Reason" : "Not enough balance in the account"}
+
+
+    user_obj.Current_Balance -= fiat_price
+    
     user_holdings = db.query(models.CryptoHoldings).filter(models.CryptoHoldings.user_id == uid).filter(models.CryptoHoldings.token_id == token_id).first()
 
     if user_holdings is None:

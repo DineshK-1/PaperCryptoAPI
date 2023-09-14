@@ -122,7 +122,7 @@ def get_user(uid: str,  db: Session = Depends(get_db)):
     else:
         raise HTTPException(status_code=404, detail=f"User with ID {uid} not found")
     
-@app.post("/{uid}/buy_crypto", tags=["Crypto"])
+@app.post("/users/{uid}/buy_crypto", tags=["Crypto"])
 async def buy_crypto(uid : str, token_id : str, amount : float,  db: Session = Depends(get_db)):
     fetch_coin_data = f"https://coinranking1.p.rapidapi.com/coin/{token_id}"
 
@@ -159,7 +159,7 @@ async def buy_crypto(uid : str, token_id : str, amount : float,  db: Session = D
     
     return {"status" : "Success"}
 
-@app.post("/{uid}/sell_crypto", tags=["Crypto"])
+@app.post("/users/{uid}/sell_crypto", tags=["Crypto"])
 async def sell_crypto(uid : str, token_id : str, amount : float,  db: Session = Depends(get_db)):
     fetch_coin_data = f"https://coinranking1.p.rapidapi.com/coin/{token_id}"
 

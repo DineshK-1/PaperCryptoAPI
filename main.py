@@ -18,7 +18,7 @@ models.Base.metadata.create_all(bind=engine)
 app = FastAPI(title="Paper Crypto API")
 
 origins = [
-    "https://papercrypto.vercel.app/",
+    "https://papercrypto.vercel.app",
     "http://localhost:8000",
     "http://localhost:5173",
 ]

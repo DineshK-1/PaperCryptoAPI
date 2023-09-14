@@ -213,8 +213,20 @@ async def sell_crypto(uid : str, token_id : str, amount : float,  db: Session = 
     else:
         return {"status": "Failed", "Reason" : "Not enough holdings"}
 
-@app.get("/{uid}/crypto_holdings", tags=["Crypto"])
+@app.get("/users/{uid}/crypto_holdings", tags=["Crypto"])
 def get_crypto_holdings(uid:str,  db: Session = Depends(get_db)):
     holdings = db.query(models.CryptoHoldings).filter(models.User.uid == uid).all()
+
+    return holdings
+
+@app.get("/users/{uid}/crypto_transactions", tags=["Crypto"])
+def crypto_transactions(uid:str,  db: Session = Depends(get_db)):
+    holdings = db.query(models.CryptoTransactions).filter(models.User.uid == uid).all()
+
+    return holdings
+
+@app.get("/users/{uid}/fiat_transactions", tags=["Crypto"])
+def fiat_transactions(uid:str,  db: Session = Depends(get_db)):
+    holdings = db.query(models.AccountTransactions).filter(models.User.uid == uid).all()
 
     return holdings

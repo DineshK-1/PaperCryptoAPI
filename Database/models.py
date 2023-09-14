@@ -63,8 +63,6 @@ class CryptoHoldings(Base):
     token_name = Column(String(50), nullable=False)
     token_symbol = Column(String(50), nullable=False)
 
-    token_price = Column(Float, nullable=False)
-
     amount = Column(Float)
 
     bought_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=func.now())

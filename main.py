@@ -152,10 +152,10 @@ async def buy_crypto(uid : str, token_id : str, amount : float,  db: Session = D
     user_holdings = db.query(models.CryptoHoldings).filter(models.CryptoHoldings.user_id == uid).filter(models.CryptoHoldings.token_id == token_id).first()
 
     if user_holdings is None:
-        holding_obj = models.CryptoHoldings(user_id = uid, token_id = token_id, token_name=data["name"], token_symbol=data["symbol"], token_price = data["price"], amount=amount)
-        holding_obj.amount += amount
+        holding_obj = models.CryptoHoldings(user_id = uid, token_id = token_id, token_name=data["name"], token_symbol=data["symbol"], amount=amount)
     else:
         holding_obj = user_holdings
+        holding_obj.amount += amount
 
     transaction = models.CryptoTransactions(user_id = uid, transaction_type = "BUY", token_id=token_id, token_name=data["name"], token_symbol=data["symbol"], token_price = data["price"], amount=amount)
 

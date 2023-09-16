@@ -215,18 +215,18 @@ async def sell_crypto(uid : str, token_id : str, amount : float,  db: Session = 
 
 @app.get("/users/{uid}/crypto_holdings", tags=["Crypto"])
 def get_crypto_holdings(uid:str,  db: Session = Depends(get_db)):
-    holdings = db.query(models.CryptoHoldings).filter(models.CryptoHoldings.user_id == uid).all()
+    holdings = db.query(models.CryptoHoldings).filter(models.CryptoHoldings.user_id == uid).order_by(models.CryptoHoldings.bought_at.desc()).all()
 
     return holdings
 
 @app.get("/users/{uid}/crypto_transactions", tags=["Crypto"])
 def crypto_transactions(uid:str,  db: Session = Depends(get_db)):
-    holdings = db.query(models.CryptoTransactions).filter(models.CryptoHoldings.user_id == uid).all()
+    holdings = db.query(models.CryptoTransactions).filter(models.CryptoHoldings.user_id == uid).order_by(models.CryptoTransactions.transaction_time.desc()).all()
 
     return holdings
 
 @app.get("/users/{uid}/fiat_transactions", tags=["Crypto"])
 def fiat_transactions(uid:str,  db: Session = Depends(get_db)):
-    holdings = db.query(models.AccountTransactions).filter(models.CryptoHoldings.user_id == uid).all()
+    holdings = db.query(models.AccountTransactions).filter(models.CryptoHoldings.user_id == uid).order_by(models.AccountTransactions.transaction_time.desc()).all()
 
     return holdings

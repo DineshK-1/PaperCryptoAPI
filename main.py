@@ -180,13 +180,11 @@ async def sell_crypto(uid : str, token_id : str, amount : float,  db: Session = 
 
     user_holding = db.query(models.CryptoHoldings).filter(models.CryptoHoldings.user_id == uid).filter(models.CryptoHoldings.token_id == token_id).first()
     
-    holding_amount = 0
-
-    for holding in user_holding:
-        holding_amount += holding.amount
+    holding_amount = user_holding.amount
 
     if holding_amount >= amount:
         user_holding.amount -= amount
+
         async with httpx.AsyncClient() as client:
             response = await client.get(fetch_coin_data, headers=headers)
 
@@ -215,7 +213,7 @@ async def sell_crypto(uid : str, token_id : str, amount : float,  db: Session = 
 
 @app.get("/users/{uid}/crypto_holdings", tags=["Crypto"])
 def get_crypto_holdings(uid:str,  db: Session = Depends(get_db)):
-    holdings = db.query(models.CryptoHoldings).filter(models.CryptoHoldings.user_id == uid).order_by(models.CryptoHoldings.bought_at.desc()).all()
+    holdings = db.query(models.CryptoHoldings).filter(models.CryptoHoldings.user_id == uid).filter(models.CryptoHoldings.amount != 0).order_by(models.CryptoHoldings.bought_at.desc()).all()
 
     return holdings
 
@@ -229,6 +227,15 @@ def crypto_transactions(uid:str,  db: Session = Depends(get_db)):
 def fiat_transactions(uid:str,  db: Session = Depends(get_db)):
     holdings = db.query(models.AccountTransactions).filter(models.AccountTransactions.user_id == uid).order_by(models.AccountTransactions.transaction_time.desc()).all()
 
+    return holdings
+
+@app.get("/users/{uid}/get_crypto_holding", tags=["Crypto"])
+def get_crypto_holding(uid:str, token_id:str,  db: Session = Depends(get_db)):
+    holdings = db.query(models.CryptoHoldings).filter(models.CryptoHoldings.user_id == uid).filter(models.CryptoHoldings.token_id == token_id).filter(models.CryptoHoldings.amount != 0).order_by(models.CryptoHoldings.bought_at.desc()).first()
+
+    if holdings is None:
+        return {"status" : "Token not available", "amount" : 0}
+    
     return holdings
 
 @app.get("/users/{uid}/initial_portfolio_value", tags=["Crypto"])

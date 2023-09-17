@@ -246,6 +246,9 @@ def initial_portfolio_value(uid:str,  db: Session = Depends(get_db)):
     original_value = 0.0
 
     for transaction in transactions:
-        original_value += transaction.token_price * transaction.amount
+        if transaction.transaction_type == "SELL":
+            original_value -= transaction.token_price * transaction.amount
+        else:
+            original_value += transaction.token_price * transaction.amount
 
     return { "original_value" : original_value }

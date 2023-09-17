@@ -230,3 +230,15 @@ def fiat_transactions(uid:str,  db: Session = Depends(get_db)):
     holdings = db.query(models.AccountTransactions).filter(models.AccountTransactions.user_id == uid).order_by(models.AccountTransactions.transaction_time.desc()).all()
 
     return holdings
+
+@app.get("/users/{uid}/initial_portfolio_value", tags=["Crypto"])
+def initial_portfolio_value(uid:str,  db: Session = Depends(get_db)):
+    user = db.query(models.User).filter(models.User.uid == uid).first()
+    transactions = user.transactions_crypto
+
+    original_value = 0.0
+
+    for transaction in transactions:
+        original_value += transaction.token_price * transaction.amount
+
+    return { "original_value" : original_value }
